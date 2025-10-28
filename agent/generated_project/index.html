@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Calculator</title>
+    <!-- Link to external stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Defer loading of the main script -->
+    <script defer src="script.js"></script>
+</head>
+<body>
+    <!-- Main calculator container -->
+    <div class="calculator">
+        <!-- Display area for expression and result -->
+        <div id="display" class="display" aria-live="polite"></div>
+        <!-- Keypad with calculator buttons -->
+        <div class="keypad">
+            <!-- Row 1: Clear, Backspace, Divide, Multiply -->
+            <div class="row">
+                <button type="button" data-value="C" aria-label="clear" class="function">C</button>
+                <button type="button" data-value="←" aria-label="backspace" class="function">←</button>
+                <button type="button" data-value="/" aria-label="divide" class="operator">÷</button>
+                <button type="button" data-value="*" aria-label="multiply" class="operator">×</button>
+            </div>
+            <!-- Row 2: 7, 8, 9, Subtract -->
+            <div class="row">
+                <button type="button" data-value="7">7</button>
+                <button type="button" data-value="8">8</button>
+                <button type="button" data-value="9">9</button>
+                <button type="button" data-value="-" aria-label="subtract" class="operator">−</button>
+            </div>
+            <!-- Row 3: 4, 5, 6, Add -->
+            <div class="row">
+                <button type="button" data-value="4">4</button>
+                <button type="button" data-value="5">5</button>
+                <button type="button" data-value="6">6</button>
+                <button type="button" data-value="+" aria-label="add" class="operator">+</button>
+            </div>
+            <!-- Row 4: 1, 2, 3, Equals -->
+            <div class="row">
+                <button type="button" data-value="1">1</button>
+                <button type="button" data-value="2">2</button>
+                <button type="button" data-value="3">3</button>
+                <button type="button" data-value="=" aria-label="equals" class="operator">=</button>
+            </div>
+            <!-- Row 5: 0, Decimal point -->
+            <div class="row">
+                <button type="button" data-value="0">0</button>
+                <button type="button" data-value=".">.</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
