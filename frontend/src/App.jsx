@@ -1,26 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import MessageList from './components/MessageList';
 import WelcomeScreen from './components/WelcomeScreen';
 import InputArea from './components/InputArea';
+import ProgressBar from './components/ProgressBar';
 
 const App = () => {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [isResponseScreen, setIsResponseScreen] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [progress, setProgress] = useState(null);
+  const eventSourceRef = useRef(null);
+
+  // Connect to SSE on mount
+  useEffect(() => {
+    const eventSource = new EventSource('http://localhost:8000/progress');
+
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setProgress(data);
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('SSE Error:', error);
+    };
+
+    eventSourceRef.current = eventSource;
+
+    return () => {
+      eventSource.close();
+    };
+  }, []);
 
   const hitRequest = () => {
     if (message) {
       generateResponse(message);
-      setLoading(true)
     } else {
       alert("You must write something... !");
     }
   };
 
   const generateResponse = async (msg) => {
+    setIsResponseScreen(true);
+    setLoading(true);
+    setMessage("");
+
     try {
+      // Add the user message immediately
+      setMessages(prev => [
+        ...prev,
+        { type: "userMsg", text: msg }
+      ]);
+
+      // Send request
       const response = await fetch("http://localhost:8000/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -32,20 +65,21 @@ const App = () => {
 
       const data = await response.json();
 
-      const newMessages = [
-        ...messages,
-        { type: "userMsg", text: msg },
-        { type: "responseMsg", text: data.output || JSON.stringify(data, null, 2), downloadReady: data.download_ready },
-      ];
+      // Add the system/response message after the reply arrives
+      setMessages(prev => [
+        ...prev,
+        {
+          type: "responseMsg",
+          text: data.output || JSON.stringify(data, null, 2),
+          downloadReady: data.download_ready
+        }
+      ]);
 
-      setMessages(newMessages);
-      setIsResponseScreen(true);
-      setMessage("");
     } catch (err) {
       console.error(err);
       alert("Error generating response");
     } finally {
-    setLoading(false);        // hide spinner
+      setLoading(false);
     }
   };
 
@@ -76,10 +110,10 @@ const App = () => {
   const newChat = () => {
     setIsResponseScreen(false);
     setMessages([]);
+    setProgress(null);
   };
 
   const handleCardClick = (text) => {
-    setMessage(text);
     generateResponse(text);
   };
 
@@ -92,6 +126,7 @@ const App = () => {
       {isResponseScreen ? (
         <>
           <Header onNewChat={newChat} />
+          <ProgressBar progress={progress} loading={loading} />
           <MessageList messages={messages} onDownload={handleDownload} />
         </>
       ) : (
@@ -109,4 +144,3 @@ const App = () => {
 };
 
 export default App;
-
