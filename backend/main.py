@@ -1,12 +1,14 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 import os
 import zipfile
 from pathlib import Path
+import json
+import asyncio
 
-from backend.agent.graph import agent
+from backend.agent.graph import agent, progress_state
 
 app = FastAPI(title="Engineering Project Planner API")
 
@@ -29,41 +31,69 @@ class ProjectRequest(BaseModel):
     recursion_limit: int = 100
 
 
+async def event_generator():
+    """Generator for SSE events"""
+    while True:
+        yield f"data: {json.dumps(progress_state)}\n\n"
+        await asyncio.sleep(0.5)  # Send updates every 500ms
+
+
+@app.get("/progress")
+async def stream_progress():
+    """SSE endpoint for progress updates"""
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
+
+
 @app.post("/plan")
 def create_plan(request: ProjectRequest):
     try:
+        # Reset progress
+        progress_state["status"] = "planning"
+        progress_state["message"] = "Starting project planning..."
+        progress_state["step"] = 0
+        progress_state["total"] = 0
+
         result = agent.invoke(
             {"user_prompt": request.prompt},
             {"recursion_limit": request.recursion_limit}
         )
 
-        # Añadir información sobre si el proyecto está listo para descargar
+        # Mark as complete
+        progress_state["status"] = "complete"
+        progress_state["message"] = "Project ready!"
+
         result["download_ready"] = True
         result["project_path"] = "MY_PROJECT"
 
         return result
 
     except Exception as e:
+        progress_state["status"] = "error"
+        progress_state["message"] = str(e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/download")
 def download_project():
-    """Crea un ZIP del proyecto y lo envía para descargar"""
+    """Creates a ZIP of the project and sends it for download"""
     try:
         project_path = Path("my_project")
 
         if not project_path.exists():
             raise HTTPException(status_code=404, detail="Project folder not found")
 
-        # Crear archivo ZIP temporal
         zip_path = "my_project.zip"
 
-        # Eliminar ZIP anterior si existe
         if os.path.exists(zip_path):
             os.remove(zip_path)
 
-        # Crear el ZIP
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
             for root, dirs, files in os.walk(project_path):
                 for file in files:
