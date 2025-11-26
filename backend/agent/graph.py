@@ -1,3 +1,4 @@
+
 from dotenv import load_dotenv
 from langchain_core.globals import set_verbose, set_debug
 from langchain_groq import ChatGroq
@@ -5,20 +6,23 @@ from langgraph.constants import END
 from langgraph.graph import StateGraph
 from langchain.agents import create_agent
 
-from agent.states import *
-from agent.prompts import *
-from agent.tools import read_file, write_file, list_files, get_current_directory
-
+from backend.agent.states import *
+from backend.agent.prompts import *
+from backend.agent.tools import read_file, write_file, list_files, get_current_directory
+from pathlib import Path
+import time
 load_dotenv()
 
 #set_debug(True)
 #set_verbose(True)
 
-llm = ChatGroq(model='openai/gpt-oss-120b')
+#llm = ChatGroq(model='openai/gpt-oss-120b')
+llm = ChatGroq(model='moonshotai/kimi-k2-instruct-0905')
+
 
 
 def planner_agent(state_dict : dict) -> dict:
-    """Converts user prompt into a structured Plan."""
+    #Converts user prompt into a structured Plan.
     user_prompt = state_dict['user_prompt']
     resp = llm.with_structured_output(Plan).invoke(
         planner_prompt(user_prompt)
@@ -30,21 +34,33 @@ def planner_agent(state_dict : dict) -> dict:
 
 
 def architect_agent(state_dict : dict) -> dict:
-    """Creates TaskPlan from Plan."""
+    #Creates TaskPlan from Plan.
     plan = state_dict['plan']
     resp = llm.with_structured_output(TaskPlan).invoke(
         architect_prompt(plan = plan)
     )
 
     if resp is None:
-        raise ValueError("Architect did not return a vali response")
+       raise ValueError("Architect did not return a vali response")
 
     resp.plan = plan
     return {'task_plan' : resp}
 
+def resolve_within_root(path_str: str, root: Path | None = None) -> Path:
+    root = (Path(root) if root else Path.cwd()).resolve()
+    p = Path(path_str)
+    # If relative, resolve against root; if absolute, resolve directly
+    p_resolved = (root / p).resolve() if not p.is_absolute() else p.resolve()
+    try:
+        p_resolved.relative_to(root)
+    except ValueError:
+        raise ValueError("Attempt to write outside project root")
+    return p_resolved
 
 def coder_agent(state_dict : dict) -> dict:
-    """LangGraph tool-using coder agent."""
+    #LangGraph tool-using coder agent.
+    time.sleep(60)
+
     coder_state =state_dict.get('coder_state')
     if coder_state is None:
         coder_state =CoderState(task_plan=state_dict['task_plan'], current_step_idx = 0 )
@@ -54,8 +70,12 @@ def coder_agent(state_dict : dict) -> dict:
     if coder_state.current_step_idx >= len(steps):
         return {'coder_state' : coder_state, "status": "DONE"}
 
+
+
+
     current_task = steps[coder_state.current_step_idx]
     existing_content = read_file.run(current_task.filepath)
+
 
     user_prompt =  (
         f"Task: {current_task.task_description}\n"
@@ -63,6 +83,8 @@ def coder_agent(state_dict : dict) -> dict:
         f"Existing content:\n{existing_content}\n"
         "Use write_file(path, content) to save your changes"
     )
+
+
     system_prompt = coder_prompt()
 
     coder_tools = [read_file, write_file, list_files, get_current_directory]

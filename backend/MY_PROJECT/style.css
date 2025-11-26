@@ -1,0 +1,414 @@
+/* CSS Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Global Color Palette */
+:root {
+    --primary: #4CAF50;
+    --primary-dark: #388E3C;
+    --primary-light: #C8E6C9;
+    --bg: #F5F5F5;
+    --bg-card: #FFFFFF;
+    --text: #212121;
+    --text-secondary: #757575;
+    --border: #E0E0E0;
+    --danger: #F44336;
+    --danger-dark: #D32F2F;
+    --shadow: rgba(0, 0, 0, 0.1);
+    --shadow-hover: rgba(0, 0, 0, 0.15);
+    --completed: #9E9E9E;
+}
+
+/* Base Typography */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text);
+    background-color: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+}
+
+/* Container */
+.container {
+    width: 100%;
+    max-width: 600px;
+    background-color: var(--bg-card);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px var(--shadow);
+    overflow: hidden;
+}
+
+/* Header */
+header {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    padding: 24px 20px;
+    text-align: center;
+    box-shadow: 0 2px 4px var(--shadow);
+}
+
+header h1 {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: 600;
+    letter-spacing: -0.5px;
+}
+
+/* Input Section */
+.input-section {
+    display: flex;
+    gap: 12px;
+    padding: 20px;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+}
+
+#taskInput {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background-color: var(--bg-card);
+}
+
+#taskInput:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+#addBtn {
+    padding: 12px 24px;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+#addBtn:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px var(--shadow);
+}
+
+#addBtn:active {
+    transform: translateY(0);
+}
+
+/* Filter Bar */
+.filter-bar {
+    display: flex;
+    gap: 8px;
+    padding: 16px 20px;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    background-color: transparent;
+    color: var(--text-secondary);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.filter-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.filter-btn.active {
+    background-color: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 2px 4px var(--shadow);
+}
+
+.filter-btn.active:hover {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+}
+
+/* Task List */
+main {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 400px;
+}
+
+#taskList {
+    list-style: none;
+    padding: 0;
+}
+
+#taskList li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    transition: all 0.3s ease;
+    background-color: var(--bg-card);
+}
+
+#taskList li:hover {
+    background-color: #FAFAFA;
+}
+
+#taskList li:last-child {
+    border-bottom: none;
+}
+
+/* Checkbox Toggle */
+.toggle {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.toggle:checked {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.toggle:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.toggle:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+/* Task Text */
+#taskList li span {
+    flex: 1;
+    font-size: 16px;
+    word-break: break-word;
+    transition: all 0.3s ease;
+}
+
+#taskList li.completed span {
+    text-decoration: line-through;
+    color: var(--completed);
+    opacity: 0.7;
+}
+
+/* Delete Button */
+.deleteBtn {
+    padding: 6px 12px;
+    background-color: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0;
+    flex-shrink: 0;
+}
+
+#taskList li:hover .deleteBtn {
+    opacity: 1;
+}
+
+.deleteBtn:hover {
+    background-color: var(--danger);
+    color: white;
+    border-color: var(--danger);
+}
+
+.deleteBtn:active {
+    background-color: var(--danger-dark);
+    border-color: var(--danger-dark);
+}
+
+/* Footer */
+footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background-color: var(--bg-card);
+    border-top: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+#clearBtn {
+    padding: 6px 12px;
+    background-color: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#clearBtn:hover {
+    color: var(--danger);
+    border-color: var(--danger);
+}
+
+#clearBtn:active {
+    background-color: var(--danger);
+    color: white;
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+.completed {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+    
+    .input-section {
+        padding: 16px;
+        gap: 8px;
+    }
+    
+    #taskInput {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+    
+    #addBtn {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+    
+    .filter-bar {
+        padding: 12px 16px;
+        gap: 6px;
+    }
+    
+    .filter-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+    
+    #taskList li {
+        padding: 12px 16px;
+        gap: 10px;
+    }
+    
+    footer {
+        padding: 12px 16px;
+        font-size: 13px;
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+}
+
+@media (max-width: 360px) {
+    .input-section {
+        flex-direction: column;
+    }
+    
+    #addBtn {
+        width: 100%;
+    }
+    
+    .filter-bar {
+        justify-content: center;
+    }
+    
+    .filter-btn {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #121212;
+        --bg-card: #1E1E1E;
+        --text: #E0E0E0;
+        --text-secondary: #B0B0B0;
+        --border: #333333;
+        --shadow: rgba(0, 0, 0, 0.3);
+        --shadow-hover: rgba(0, 0, 0, 0.5);
+        --completed: #666666;
+    }
+    
+    #taskList li:hover {
+        background-color: #252525;
+    }
+}
+
+/* Focus styles for accessibility */
+button:focus-visible,
+input:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--text-secondary);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text);
+}
