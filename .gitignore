@@ -1,11 +1,99 @@
-# OS
+# ==============================================================================
+#  Root .gitignore — covers backend (Python/FastAPI) + frontend (React/Vite)
+# ==============================================================================
+
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+MANIFEST
+
+.venv/
+venv/
+env/
+ENV/
+.env.bak
+
+# ── Environment & secrets ─────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+!.env.local.example
+*.pem
+*.key
+secrets/
+
+# ── Database ──────────────────────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Pytest / coverage ─────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# ── Mypy / type checkers ──────────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+
+# ── Ruff / linters ────────────────────────────────────────────────────────────
+.ruff_cache/
+
+# ── uv / pip ──────────────────────────────────────────────────────────────────
+.uv/
+pip-log.txt
+
+# ── Node / npm ────────────────────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ── Vite / frontend build ─────────────────────────────────────────────────────
+frontend/dist/
+frontend/dist-ssr/
+.vite/
+*.tsbuildinfo
+
+# ── ESLint ────────────────────────────────────────────────────────────────────
+.eslintcache
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+coverage/
+.vitest/
+
+# ── PyCharm / JetBrains ───────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# ── Project-generated files ───────────────────────────────────────────────────
+MY_PROJECTS/
+*.zip
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+logs/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
-
-# IDEs
-.idea/
-*.vscode/
-
-# Temporary files
-*.log
-*.tmp
+desktop.ini

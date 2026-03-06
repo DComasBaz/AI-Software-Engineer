@@ -1,24 +1,75 @@
-# Python-generated files
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
-*.py[oc]
-build/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+
+# Distribution / packaging
 dist/
-wheels/
-*.egg-info
+build/
+*.egg-info/
+*.egg
+.eggs/
+MANIFEST
 
 # Virtual environments
-.venv
+.venv/
+venv/
+env/
+ENV/
+.env.bak
+
+# ── Environment & secrets ─────────────────────────────────────────────────────
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
 
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints/
+# ── Database ──────────────────────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
 
-# Logs
-*.log
+# ── Pytest / coverage ─────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.coveragerc
 
-# IDEs and editors
-.vscode/
+# ── Mypy / type checkers ──────────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+
+# ── Ruff / linters ────────────────────────────────────────────────────────────
+.ruff_cache/
+
+# ── uv / pip ──────────────────────────────────────────────────────────────────
+.uv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ── PyCharm / JetBrains ───────────────────────────────────────────────────────
 .idea/
+*.iml
+*.iws
+*.ipr
+out/
 
-# System files
+# ── Project-generated files ───────────────────────────────────────────────────
+MY_PROJECTS/
+*.zip
+
+# ── OS ────────────────────────────────────────────────────────────────────────
 .DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/

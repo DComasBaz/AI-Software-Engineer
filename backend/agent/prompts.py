@@ -1,4 +1,3 @@
-
 def planner_prompt(user_prompt: str, existing_project_context: str = None) -> str:
     if existing_project_context:
         PLANNER_PROMPT = f"""
@@ -70,11 +69,21 @@ You have access to tools to read and write files.
 
 {modification_note}
 
+AVAILABLE TOOLS (ONLY these exist, do NOT invent others):
+- read_file(path) (NOT 'read_files', NOT 'readFile', NOT 'readfile')
+- write_file(path, content) (NOT 'write_files', NOT 'writeFile', NOT 'writefile')
+- list_files(directory) (NOT 'list_file', NOT 'listFiles', NOT 'listFile')
+- get_current_directory()
+
+Calling any other tool name will cause a fatal error. Do not call tools like 
+repo_browser.search, grep, find, or any other tool not listed above.
+
 Always:
 - Review all existing files to maintain compatibility.
 - Implement the FULL file content, integrating with other modules.
 - Maintain consistent naming of variables, functions, and imports.
 - When a module is imported from another file, ensure it exists and is implemented as described.
+
     """
     return CODER_PROMPT
 
