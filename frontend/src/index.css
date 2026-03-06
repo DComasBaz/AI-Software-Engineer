@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Sora:wght@400;600;700;800&display=swap');
+@import "tailwindcss";
+
+:root {
+  /* Typography */
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-display: 'Sora', sans-serif;
+
+  font-family: var(--font-display);
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #0e0e0f;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Override Tailwind's font-mono stack with JetBrains Mono */
+.font-mono {
+  font-family: var(--font-mono) !important;
+}
+
+/* Utility for display headings */
+.font-display {
+  font-family: var(--font-display) !important;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-family: var(--font-display);
+  cursor: pointer;
+  transition: border-color 0.25s;
+}

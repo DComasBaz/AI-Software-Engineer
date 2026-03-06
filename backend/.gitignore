@@ -1,8 +1,3 @@
-# ==============================================================================
-#  Root .gitignore — covers backend (Python/FastAPI) + frontend (React/Vite)
-# ==============================================================================
-
-
 # ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
@@ -10,6 +5,7 @@ __pycache__/
 *.so
 *.pyd
 
+# Distribution / packaging
 dist/
 build/
 *.egg-info/
@@ -17,6 +13,7 @@ build/
 .eggs/
 MANIFEST
 
+# Virtual environments
 .venv/
 venv/
 env/
@@ -27,7 +24,6 @@ ENV/
 .env
 .env.*
 !.env.example
-!.env.local.example
 *.pem
 *.key
 secrets/
@@ -42,6 +38,7 @@ secrets/
 .coverage
 htmlcov/
 coverage.xml
+*.coveragerc
 
 # ── Mypy / type checkers ──────────────────────────────────────────────────────
 .mypy_cache/
@@ -55,25 +52,7 @@ dmypy.json
 # ── uv / pip ──────────────────────────────────────────────────────────────────
 .uv/
 pip-log.txt
-
-# ── Node / npm ────────────────────────────────────────────────────────────────
-node_modules/
-.pnp
-.pnp.js
-.yarn/install-state.gz
-
-# ── Vite / frontend build ─────────────────────────────────────────────────────
-frontend/dist/
-frontend/dist-ssr/
-.vite/
-*.tsbuildinfo
-
-# ── ESLint ────────────────────────────────────────────────────────────────────
-.eslintcache
-
-# ── Testing ───────────────────────────────────────────────────────────────────
-coverage/
-.vitest/
+pip-delete-this-directory.txt
 
 # ── PyCharm / JetBrains ───────────────────────────────────────────────────────
 .idea/
@@ -86,14 +65,11 @@ out/
 MY_PROJECTS/
 *.zip
 
-# ── Logs ─────────────────────────────────────────────────────────────────────
-*.log
-npm-debug.log*
-yarn-debug.log*
-pnpm-debug.log*
-logs/
-
 # ── OS ────────────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
