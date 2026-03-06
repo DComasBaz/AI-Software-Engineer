@@ -14,4 +14,6 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "uvicorn>=0.24.0",
     "fastapi[all]>=0.101.1",
+    "sqlalchemy>=2.0.32",
+    "psycopg2-binary>=2.9.11",
 ]

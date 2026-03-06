@@ -1,26 +1,14 @@
-from sqlalchemy import create_engine, Column, String, DateTime, Integer, Text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-from datetime import datetime
-import uuid
+from core.config import settings
 
 engine = create_engine(
-    "sqlite:///./chat_history.db",
-    connect_args={"check_same_thread": False}
+    str(settings.database_url),
+    connect_args={"check_same_thread": False} if "sqlite" in str(settings.database_url) else {},
+    pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=10,
 )
 
+SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 Base = declarative_base()
-SessionLocal = sessionmaker(bind=engine)
-
-
-class ChatSession(Base):
-    __tablename__ = "chat_sessions"
-
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    prompt = Column(Text, nullable=False)
-    output = Column(Text)
-    status = Column(String, default="pending")  # pending | done | error
-    download_ready = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-
-Base.metadata.create_all(engine)
