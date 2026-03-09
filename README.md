@@ -56,6 +56,7 @@ Progress is streamed to the browser in real time through **Server-Sent Events (S
 | Frontend | React 19, Vite 7, Tailwind CSS 4 |
 | Streaming | Server-Sent Events (SSE) |
 | Packaging | uv / pip, pyproject.toml |
+| Deployment | Docker, Docker Compose |
 
 ---
 
@@ -105,21 +106,51 @@ Progress is streamed to the browser in real time through **Server-Sent Events (S
 
 ### Prerequisites
 
-- Python 3.11+
-- Node.js 20+
 - A [Groq API key](https://console.groq.com/)
 
-### 1. Clone the repo
+### 🐳 Quick Start with Docker (recommended)
+
+```bash
+git clone https://github.com/your-username/ai-software-engineer.git
+cd ai-software-engineer
+
+# Configure environment variables
+cp backend/.env.example backend/.env
+# Edit backend/.env — set GROQ_API_KEY and POSTGRES_PASSWORD
+
+# Build and start all services
+docker compose up --build
+```
+
+Open **http://localhost** in your browser.
+
+To stop all services:
+
+```bash
+docker compose down
+```
+
+> Generated projects are persisted in `./backend/MY_PROJECTS` on your host machine via a bind mount.
+
+---
+
+### 🛠️ Manual Setup (alternative)
+
+#### Prerequisites
+
+- Python 3.11+
+- Node.js 20+
+
+#### 1. Clone the repo
 
 ```bash
 git clone https://github.com/your-username/ai-software-engineer.git
 cd ai-software-engineer
 ```
 
-### 2. Backend setup
+#### 2. Backend setup
 
 ```bash
-# Install dependencies and create the virtual environment
 cd backend
 
 uv sync
@@ -132,7 +163,7 @@ cp .env.example .env
 uv run main.py
 ```
 
-### 3. Frontend setup
+#### 3. Frontend setup
 
 ```bash
 cd frontend
@@ -146,17 +177,20 @@ Open **http://localhost:5173** in your browser.
 
 ## ⚙️ Environment Variables
 
-Create a `.env` file in the project root (see `.env.example`):
+Create a `backend/.env` file (see `backend/.env.example`):
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `GROQ_API_KEY` | ✅ | — | Your Groq API key |
-| `DATABASE_URL` | ✅ | — | e.g. `sqlite:///./app.db` |
+| `DATABASE_URL` | ✅ | — | e.g. `postgresql://postgres:password@db:5432/chat_history` |
+| `POSTGRES_PASSWORD` | ✅ | — | PostgreSQL password (Docker only) |
 | `GROQ_MODEL` | ❌ | `openai/gpt-oss-120b` | Model name passed to Groq |
 | `DEBUG` | ❌ | `false` | Enables debug logging & hot reload |
 | `PROJECTS_BASE` | ❌ | `./MY_PROJECTS` | Where agent-generated projects are saved |
 | `MIN_DELAY_SECONDS` | ❌ | `120` | Max back-off on Groq rate-limit retries |
 | `DEFAULT_RECURSION_LIMIT` | ❌ | `100` | Default LangGraph recursion limit |
+
+For Docker deployments you can also set `VITE_API_BASE` in the root environment to override the frontend API URL (default: `http://localhost:8000/api/v1`).
 
 ---
 
@@ -189,7 +223,7 @@ Create a `.env` file in the project root (see `.env.example`):
 
 ## 🛣️ Roadmap
 
-- [ ] Docker Compose setup for one-command deployment
+- [x] Docker Compose setup for one-command deployment
 - [ ] Support for additional LLM providers (OpenAI, Anthropic)
 - [ ] File browser UI to inspect generated code before download
 
@@ -197,4 +231,4 @@ Create a `.env` file in the project root (see `.env.example`):
 
 ## 📄 License
 
-MIT 
+MIT
