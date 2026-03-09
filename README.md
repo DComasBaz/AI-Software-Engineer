@@ -111,7 +111,7 @@ Progress is streamed to the browser in real time through **Server-Sent Events (S
 ### 🐳 Quick Start with Docker (recommended)
 
 ```bash
-git clone https://github.com/your-username/ai-software-engineer.git
+git clone https://github.com/DComasBaz/AI-Software-Engineer.git
 cd ai-software-engineer
 
 # Configure environment variables
