@@ -144,7 +144,7 @@ docker compose down
 #### 1. Clone the repo
 
 ```bash
-git clone https://github.com/your-username/ai-software-engineer.git
+git clone https://github.com/DComasBaz/AI-Software-Engineer.git
 cd ai-software-engineer
 ```
 
