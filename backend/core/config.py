@@ -19,8 +19,12 @@ class Settings(BaseSettings):
     groq_model: str = "openai/gpt-oss-120b"
 
     # CORS
-    allowed_origins: List[str] = ["http://localhost:3000", "http://localhost:5173"]
-
+    allowed_origins: List[str] = [
+        "http://localhost",  # ← nginx / Docker (port 80)
+        "http://localhost:80",  # ← explicit port, some browsers send this
+        "http://localhost:3000",  # local dev (CRA)
+        "http://localhost:5173",  # local dev (Vite)
+    ]
     # Projects
     projects_base: Path = Path.cwd() / "MY_PROJECTS"
 
