@@ -221,6 +221,37 @@ For Docker deployments you can also set `VITE_API_BASE` in the root environment 
 
 ---
 
+## 🧪 Testing
+
+The backend has a full test suite covering all critical layers of the application.
+
+### Test setup
+
+Tests require a PostgreSQL test database. Add it to `backend/.env`:
+
+```
+TEST_DATABASE_URL=postgresql://user:pass@localhost:5432/myapp_test
+```
+
+Run all tests from the repo root:
+
+```bash
+cd backend
+uv run pytest tests/ -v
+```
+
+### Test structure
+
+| File | What it covers |
+|---|---|
+| `tests/test_routes.py` | HTTP endpoints — status codes, request validation, error handling |
+| `tests/test_project_service.py` | Business logic — session lifecycle, ZIP export, agent task execution |
+| `tests/test_tools.py` | File-system tools — read/write/list, path traversal prevention |
+| `tests/test_states.py` | Pydantic models — validation, required fields, defaults |
+| `tests/test_prompts.py` | Prompt generation — correct variables, modification vs new-project mode |
+
+---
+
 ## 🛣️ Roadmap
 
 - [x] Docker Compose setup for one-command deployment
@@ -232,3 +263,4 @@ For Docker deployments you can also set `VITE_API_BASE` in the root environment 
 ## 📄 License
 
 MIT
+
