@@ -9,6 +9,12 @@ const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1';
 export const useSSE = (sessionId, loading, { onProgress, onComplete, onError }) => {
   const eventSourceRef = useRef(null);
 
+  // Keep callback refs up-to-date so the effect never captures stale closures.
+  const callbacksRef = useRef({ onProgress, onComplete, onError });
+  useEffect(() => {
+    callbacksRef.current = { onProgress, onComplete, onError };
+  });
+
   useEffect(() => {
     if (!sessionId || !loading) return;
 
@@ -23,22 +29,22 @@ export const useSSE = (sessionId, loading, { onProgress, onComplete, onError }) 
       if (cancelled) return;
 
       const data = JSON.parse(event.data);
-      onProgress?.(data);
+      callbacksRef.current.onProgress?.(data);
 
       if (data.status === 'complete') {
         es.close();
         try {
           const res = await fetch(`${BASE}/sessions/${sessionId}`);
           const session = await res.json();
-          if (!cancelled) onComplete(session);
+          if (!cancelled) callbacksRef.current.onComplete(session);
         } catch (err) {
-          if (!cancelled) onError(err.message);
+          if (!cancelled) callbacksRef.current.onError(err.message);
         }
       }
 
       if (data.status === 'error') {
         es.close();
-        if (!cancelled) onError(data.message);
+        if (!cancelled) callbacksRef.current.onError(data.message);
       }
     };
 

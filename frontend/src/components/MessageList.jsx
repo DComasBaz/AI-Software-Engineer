@@ -68,7 +68,7 @@ const MessageList = ({ messages, onDownload, isDark }) => {
               </p>
               {msg.downloadReady ? (
                 <button
-                  onClick={onDownload}
+                  onClick={() => onDownload(msg.sessionId)}
                   aria-label="Download project zip"
                   className="w-full bg-gradient-to-r from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 px-8 py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-3 text-white font-semibold text-lg group"
                 >
@@ -81,7 +81,7 @@ const MessageList = ({ messages, onDownload, isDark }) => {
                     ? 'bg-[#141415] border border-white/5 text-zinc-300 shadow-[0_4px_20px_rgba(0,0,0,0.3)]'
                     : 'bg-white border border-zinc-200 text-zinc-700 shadow-[0_4px_20px_rgba(0,0,0,0.06)]'
                   }`}>
-                    <MarkdownRenderer content={msg.text} isDark={isDark} />
+                    <MarkdownRenderer content={msg.text || "Loading ..."} isDark={isDark} />
                   </div>
                   <CopyButton text={msg.text} isDark={isDark} />
                 </>

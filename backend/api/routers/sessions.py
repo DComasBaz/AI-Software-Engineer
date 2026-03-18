@@ -3,6 +3,7 @@ Routes for session history, progress streaming, and deletion.
 """
 import asyncio
 import json
+import shutil
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -28,6 +29,7 @@ def list_sessions(limit: int = 50, db: Session = Depends(get_db)):
     """Returns the most recent sessions, newest first."""
     sessions = (
         db.query(ChatSession)
+        .filter(ChatSession.parent_session_id.is_(None))
         .order_by(ChatSession.created_at.desc())
         .limit(limit)
         .all()
@@ -49,8 +51,31 @@ def delete_session(session_id: str, db: Session = Depends(get_db)):
         session = get_session_or_404(db, session_id)
     except AppError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message)
+
+    # Collect all folders to remove (root + any sub-sessions)
+    paths_to_delete = []
+    if session.project_path:
+        paths_to_delete.append(session.project_path)
+
+    sub_sessions = (
+        db.query(ChatSession)
+        .filter(ChatSession.parent_session_id == session_id)
+        .all()
+    )
+    for sub in sub_sessions:
+        if sub.project_path:
+            paths_to_delete.append(sub.project_path)
+        db.delete(sub)
+
     db.delete(session)
     db.commit()
+
+    # Clean up folders after DB commit so a crash doesn't leave ghost rows
+    for path in paths_to_delete:
+        try:
+            shutil.rmtree(path, ignore_errors=True)
+        except Exception:
+            pass
 
 
 @router.patch("/{session_id}/messages", status_code=200)

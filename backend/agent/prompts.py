@@ -70,9 +70,9 @@ You have access to tools to read and write files.
 {modification_note}
 
 AVAILABLE TOOLS (ONLY these exist, do NOT invent others):
-- read_file(path) (NOT 'read_files', NOT 'readFile', NOT 'readfile')
-- write_file(path, content) (NOT 'write_files', NOT 'writeFile', NOT 'writefile')
-- list_files(directory) (NOT 'list_file', NOT 'listFiles', NOT 'listFile')
+- read_file(path) 
+- write_file(path, content) 
+- list_files(directory) 
 - get_current_directory()
 
 Calling any other tool name will cause a fatal error. Do not call tools like 

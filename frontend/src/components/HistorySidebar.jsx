@@ -40,7 +40,7 @@ const HistorySidebar = ({ open, history, historyLoading, onSessionClick, onDelet
         aria-label="Session history"
         className={`
           fixed md:static inset-y-0 left-0 z-30 md:z-10
-          w-72 flex flex-col border-r shrink-0 overflow-hidden
+          w-72 h-screen flex flex-col border-r shrink-0 overflow-hidden
           transform transition-transform duration-300
           md:transform-none
           ${open ? 'translate-x-0' : '-translate-x-full'}
@@ -66,7 +66,7 @@ const HistorySidebar = ({ open, history, historyLoading, onSessionClick, onDelet
         </div>
 
         {/* Session list */}
-        <div className="flex-1 overflow-y-auto py-2">
+        <div className="flex-1 overflow-y-auto py-2 scrollbar-none" style={{scrollbarWidth:"none",msOverflowStyle:"none"}}>
           {historyLoading ? (
             // Skeleton state
             Array.from({ length: 4 }).map((_, i) => <SkeletonItem key={i} isDark={isDark} />)

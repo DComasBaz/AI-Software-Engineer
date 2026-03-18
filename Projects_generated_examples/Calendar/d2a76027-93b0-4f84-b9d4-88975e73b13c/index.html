@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Calendar</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="calendar-container">
+        <button id="prevMonth">&lt;</button>
+        <h2 id="monthYear"></h2>
+        <button id="nextMonth">&gt;</button>
+        <div id="calendar"></div>
+    </div>
+
+    <div id="eventList" class="event-list"></div>
+
+    <div id="eventModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+            <h3>Add Event</h3>
+            <form id="eventForm">
+                <label>Date: <input type="text" id="eventDate" readonly></label>
+                <label>Title: <input type="text" id="eventTitle" required></label>
+                <label>Time: <input type="time" id="eventTime"></label>
+                <label>Description: <textarea id="eventDesc"></textarea></label>
+                <button type="submit">Save</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

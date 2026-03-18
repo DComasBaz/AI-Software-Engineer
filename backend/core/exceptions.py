@@ -27,3 +27,11 @@ class InvalidRecursionLimitError(AppError):
             f"recursion_limit must be between 1 and {max_limit}",
             status_code=422,
         )
+
+
+class TaskCancelledError(Exception):
+    """Raised when a session is cancelled by the user.
+
+    Intentionally does NOT extend AppError — this is a control-flow signal
+    caught explicitly in run_agent_task, not an HTTP error.
+    """
