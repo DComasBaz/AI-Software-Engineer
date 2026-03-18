@@ -228,6 +228,18 @@ def coder_node(state: dict) -> dict:
     if coder_state.current_step_idx >= len(steps):
         return {"coder_state": coder_state, "status": "DONE", "session_id": session_id}
 
+def coder_node(state: dict) -> dict:
+    session_id: str = state["session_id"]
+    is_modification: bool = state.get("is_modification", False)
+
+    coder_state: CoderState | None = state.get("coder_state")
+    if coder_state is None:
+        coder_state = CoderState(task_plan=state["task_plan"], current_step_idx=0)
+
+    steps = coder_state.task_plan.implementation_steps
+    if coder_state.current_step_idx >= len(steps):
+        return {"coder_state": coder_state, "status": "DONE", "session_id": session_id}
+
     current_task = steps[coder_state.current_step_idx]
     step_num = coder_state.current_step_idx + 1
     total = len(steps)
@@ -264,6 +276,9 @@ def coder_node(state: dict) -> dict:
     coder_state.current_step_idx += 1
     return {"coder_state": coder_state, "agent_result": result, "session_id": session_id}
 
+# ---------------------------------------------------------------------------
+# Graph assembly
+# ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
 # Graph assembly
