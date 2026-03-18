@@ -2,9 +2,9 @@ import React from 'react';
 import { FiMenu } from 'react-icons/fi';
 import { HiSun, HiMoon } from 'react-icons/hi';
 
-const Header = ({ onNewChat, onToggleSidebar, isDark, onToggleTheme }) => {
+const Header = ({ onNewChat, onToggleSidebar, isDark, onToggleTheme, onShowProjects }) => {
   return (
-    <header className={`flex items-center justify-between px-10 md:px-20 py-4 border-b ${isDark ? 'border-amber-500/10 bg-[#0e0e0f]/90' : 'border-amber-400/20 bg-[#f5f3ef]/90'} backdrop-blur-md z-20 transition-colors duration-300`}>
+    <header className={`flex items-center justify-between px-10 md:px-20 py-4 gap-8 border-b ${isDark ? 'border-amber-500/10 bg-[#0e0e0f]/90' : 'border-amber-400/20 bg-[#f5f3ef]/90'} backdrop-blur-md z-20 transition-colors duration-300`}>
       <div className="flex items-center gap-4">
         <button
           onClick={onToggleSidebar}
@@ -36,6 +36,13 @@ const Header = ({ onNewChat, onToggleSidebar, isDark, onToggleTheme }) => {
         </button>
 
         <button
+          onClick={onShowProjects}
+          className="px-5 py-2 rounded-full cursor-pointer text-base font-bold transition-all duration-300 shadow-md hover:shadow-lg bg-gradient-to-r from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 text-white focus-visible:ring-2 focus-visible:ring-green-400"
+        >
+          My Projects
+        </button>
+
+        <button
           className={`px-5 py-2 rounded-full cursor-pointer text-base font-bold transition-all duration-300 shadow-md hover:shadow-lg focus-visible:ring-2 focus-visible:ring-amber-400 ${isDark ? 'bg-white text-black hover:bg-zinc-100' : 'bg-gray-900 text-white hover:bg-gray-700'}`}
           onClick={onNewChat}
         >
@@ -47,4 +54,3 @@ const Header = ({ onNewChat, onToggleSidebar, isDark, onToggleTheme }) => {
 };
 
 export default Header;
-

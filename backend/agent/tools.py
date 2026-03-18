@@ -85,6 +85,10 @@ def list_files(directory: str = ".") -> str:
     files = [str(f.relative_to(root)) for f in p.glob("**/*") if f.is_file()]
     return "\n".join(sorted(files)) if files else "No files found."
 
+@tool
+def list_file(directory: str = ".") -> str:
+    """Alias for list_files — lists files in a directory."""
+    return list_files.run(directory)
 
 @tool
 def get_current_directory() -> str:

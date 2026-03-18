@@ -9,11 +9,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from langchain.agents import create_agent
 from langchain_groq import ChatGroq
 from langgraph.constants import END
 from langgraph.graph import StateGraph
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from langgraph.prebuilt import create_react_agent
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from agent.prompts import architect_prompt, coder_prompt, planner_prompt
 from agent.states import CoderState, Plan, TaskPlan
@@ -21,10 +21,12 @@ from agent.tools import (
     get_current_directory,
     get_project_root,
     list_files,
+    list_file,
     read_file,
     write_file,
 )
 from core.config import settings
+from core.exceptions import TaskCancelledError
 from core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -42,6 +44,7 @@ def init_progress(session_id: str) -> None:
         "message": "Initialising...",
         "step": 0,
         "total": 0,
+        "cancelled": False,      # <-- cancellation flag
     }
 
 
@@ -51,6 +54,17 @@ def update_progress(session_id: str, **kwargs: Any) -> None:
     logger.info("[%s] %s", session_id, kwargs.get("message", ""))
 
 
+def cancel_task(session_id: str) -> None:
+    """Signal the background task to stop after its current step."""
+    if session_id in progress_store:
+        progress_store[session_id]["cancelled"] = True
+        logger.info("[%s] Cancellation requested", session_id)
+
+
+def is_cancelled(session_id: str) -> bool:
+    return progress_store.get(session_id, {}).get("cancelled", False)
+
+
 # ---------------------------------------------------------------------------
 # LLM
 # ---------------------------------------------------------------------------
@@ -58,6 +72,9 @@ llm = ChatGroq(
     model=settings.groq_model,
     api_key=settings.groq_api_key,
 )
+
+_coder_tools = [read_file, write_file, list_files, list_file, get_current_directory]
+_coder_agent = create_react_agent(model=llm, tools=_coder_tools)
 
 
 # ---------------------------------------------------------------------------
@@ -88,17 +105,49 @@ def _get_existing_project_context() -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# Retry decorator for Groq rate-limit errors
+# Retry decorator for Groq rate-limit and tool-parse errors
 # ---------------------------------------------------------------------------
 try:
     from groq import RateLimitError as GroqRateLimitError
+    from groq import BadRequestError as GroqBadRequestError
 except ImportError:
     GroqRateLimitError = Exception  # fallback
+    GroqBadRequestError = Exception  # fallback
+
+
+def _is_retryable(exc: BaseException) -> bool:
+    """Retry on rate limits and tool-call JSON parse failures.
+
+    LangChain wraps Groq's BadRequestError in its own exception types, so we
+    walk the full cause chain and also match on message text for any exc type.
+    """
+    _tool_call_patterns = (
+        "tool_use_failed",
+        "failed to parse tool call",
+        "attempted to call tool",
+        "did not call a tool",
+    )
+
+    current: BaseException | None = exc
+    while current is not None:
+        if isinstance(current, GroqRateLimitError):
+            return True
+        if isinstance(current, GroqBadRequestError):
+            msg = str(current).lower()
+            if any(p in msg for p in _tool_call_patterns):
+                return True
+        # LangChain may re-raise as a plain exception — check the message too
+        msg = str(current).lower()
+        if any(p in msg for p in _tool_call_patterns):
+            return True
+        current = getattr(current, "__cause__", None) or getattr(current, "__context__", None)
+
+    return False
 
 
 _llm_retry = retry(
-    retry=retry_if_exception_type(GroqRateLimitError),
-    wait=wait_exponential(multiplier=1, min=30, max=settings.min_delay_seconds),
+    retry=_is_retryable,
+    wait=wait_exponential(multiplier=1, min=5, max=settings.min_delay_seconds),
     stop=stop_after_attempt(5),
     reraise=True,
 )
@@ -109,6 +158,11 @@ _llm_retry = retry(
 
 def planner_node(state: dict) -> dict:
     session_id: str = state["session_id"]
+
+    # Check cancellation before starting any LLM work
+    if is_cancelled(session_id):
+        raise TaskCancelledError("Cancelled before planning")
+
     update_progress(session_id, status="planning", message="Creating project plan...")
 
     user_prompt: str = state["user_prompt"]
@@ -130,6 +184,10 @@ def planner_node(state: dict) -> dict:
 
 def architect_node(state: dict) -> dict:
     session_id: str = state["session_id"]
+
+    if is_cancelled(session_id):
+        raise TaskCancelledError("Cancelled before architecting")
+
     update_progress(session_id, status="architecting", message="Designing project architecture...")
 
     plan: Plan = state["plan"]
@@ -153,6 +211,13 @@ def architect_node(state: dict) -> dict:
 
 def coder_node(state: dict) -> dict:
     session_id: str = state["session_id"]
+
+    # --- Cancellation check at the start of every step ---
+    # This is the only safe point to interrupt: between file writes,
+    # not mid-LLM-call which is not interruptible.
+    if is_cancelled(session_id):
+        raise TaskCancelledError("Cancelled between coding steps")
+
     is_modification: bool = state.get("is_modification", False)
 
     coder_state: CoderState | None = state.get("coder_state")
@@ -184,12 +249,9 @@ def coder_node(state: dict) -> dict:
         "Use write_file(path, content) to save your changes."
     )
 
-    coder_tools = [read_file, write_file, list_files, get_current_directory]
-
     @_llm_retry
     def _invoke() -> Any:
-        agent = create_agent(model=llm, tools=coder_tools)
-        return agent.invoke({
+        return _coder_agent.invoke({
             "messages": [
                 {"role": "system", "content": coder_prompt(is_modification=is_modification)},
                 {"role": "user", "content": user_msg},

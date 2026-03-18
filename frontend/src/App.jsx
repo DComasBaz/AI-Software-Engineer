@@ -7,6 +7,7 @@ import ProgressBar from './components/ProgressBar';
 import HistorySidebar from './components/HistorySidebar';
 import { useSSE } from './hooks/useSSE';
 import { useHistory } from './hooks/useHistory';
+import ProjectsView from './components/ProjectsView';
 
 const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1';
 
@@ -19,8 +20,10 @@ const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [projectSessionId, setProjectSessionId] = useState(null);
-  const [theme, setTheme] = useState('dark');
-  const [backendOnline, setBackendOnline] = useState(null); // null=checking, true/false
+  const [theme, setTheme] = useState('light');
+  const [backendOnline, setBackendOnline] = useState(null);
+  const [showProjects, setShowProjects] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const isDark = theme === 'dark';
 
@@ -42,9 +45,15 @@ const App = () => {
     check();
   }, []);
 
+  // Close SSE on unmount to prevent leaking connections
+  useEffect(() => {
+    return () => eventSourceRef.current?.close();
+  }, []);
+
   const saveMessages = useCallback(async (sid, msgs) => {
+    const targetId = projectSessionId || sid;
     try {
-      await fetch(`${BASE}/sessions/${sid}/messages`, {
+      await fetch(`${BASE}/sessions/${targetId}/messages`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: msgs }),
@@ -52,7 +61,7 @@ const App = () => {
     } catch (err) {
       console.error('Failed to save messages:', err);
     }
-  }, []);
+  }, [projectSessionId]);
 
   // SSE hook — handles progress and completion
   const eventSourceRef = useSSE(sessionId, loading, {
@@ -60,39 +69,78 @@ const App = () => {
     onComplete: (session) => {
       const newMsg = {
         type: 'responseMsg',
-        text: session.output || 'Project generated successfully.',
+        text: '',
         downloadReady: session.download_ready,
+        sessionId: session.id,
       };
       setMessages(prev => {
         const updated = [...prev, newMsg];
-        saveMessages(sessionId, updated);
+        saveMessages(session.id, updated);
         return updated;
       });
       setLoading(false);
+      setCancelling(false);
       fetchHistory();
     },
     onError: (errMsg) => {
-      const newMsg = { type: 'responseMsg', text: `Error: ${errMsg}`, downloadReady: false };
+      const newMsg = { type: 'responseMsg', text: `Error: ${errMsg}`, downloadReady: false, sessionId: sessionId };
       setMessages(prev => {
         const updated = [...prev, newMsg];
         saveMessages(sessionId, updated);
         return updated;
       });
       setLoading(false);
+      setCancelling(false);
       fetchHistory();
     },
   });
 
+  // ---------------------------------------------------------------------------
+  // Cancel an in-progress generation
+  // ---------------------------------------------------------------------------
+  const handleCancel = useCallback(async () => {
+    if (!sessionId || cancelling) return;
+    setCancelling(true);
+
+    // Close the SSE stream immediately on the frontend
+    eventSourceRef.current?.close();
+
+    try {
+      await fetch(`${BASE}/projects/${sessionId}/cancel`, { method: 'POST' });
+    } catch (err) {
+      console.error('Cancel request failed:', err);
+    }
+
+    // Optimistically update the UI — the SSE onError/onComplete will also fire
+    // once the backend confirms, but we don't want to leave the user waiting.
+    const cancelMsg = { type: 'responseMsg', text: 'Generation cancelled.', downloadReady: false };
+    setMessages(prev => {
+      const updated = [...prev, cancelMsg];
+      saveMessages(sessionId, updated);
+      return updated;
+    });
+    setLoading(false);
+    setCancelling(false);
+    fetchHistory();
+  }, [sessionId, cancelling, saveMessages, fetchHistory]);
+
+  // ---------------------------------------------------------------------------
+  // Generate / modify
+  // ---------------------------------------------------------------------------
   const generateResponse = useCallback(async (msg) => {
     setIsResponseScreen(true);
     setLoading(true);
     setMessage('');
     setProgress(null);
+    setCancelling(false);
 
-    // Build the updated messages list upfront to avoid stale closure
     const userMsg = { type: 'userMsg', text: msg };
-    const updatedMessages = [...messages, userMsg];
-    setMessages(updatedMessages);
+
+    // Use functional setter to avoid stale closure on rapid sends
+    setMessages(prev => {
+      const updated = [...prev, userMsg];
+      return updated;
+    });
 
     try {
       const body = { prompt: msg };
@@ -106,13 +154,22 @@ const App = () => {
 
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.detail || 'Request failed');
+        const detail = err.detail;
+        const msg = typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map(e => e.msg ?? JSON.stringify(e)).join(', ')
+            : JSON.stringify(detail) || 'Request failed';
+        throw new Error(msg);
       }
 
       const data = await response.json();
 
-      // Save the current message list
-      saveMessages(data.session_id, updatedMessages);
+      setMessages(prev => {
+        saveMessages(data.session_id, prev);
+        return prev;
+      });
+
       setSessionId(data.session_id);
       if (!projectSessionId) setProjectSessionId(data.session_id);
       fetchHistory();
@@ -124,7 +181,7 @@ const App = () => {
       ]);
       setLoading(false);
     }
-  }, [messages, projectSessionId, saveMessages, fetchHistory]);
+  }, [projectSessionId, saveMessages, fetchHistory]);
 
   const hitRequest = () => {
     if (message.trim()) {
@@ -134,10 +191,11 @@ const App = () => {
     }
   };
 
-  const handleDownload = async () => {
-    if (!sessionId) return alert('No project session found.');
+  const handleDownload = async (sid) => {
+    const target = sid || sessionId;
+    if (!target) return alert('No project session found.');
     try {
-      const response = await fetch(`${BASE}/projects/${sessionId}/download`);
+      const response = await fetch(`${BASE}/projects/${target}/download`);
       if (!response.ok) throw new Error('Download failed');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -161,21 +219,35 @@ const App = () => {
     setIsResponseScreen(true);
     setSidebarOpen(false);
     setProgress(null);
+    setCancelling(false);
+
+    const buildMessages = (parsed) => {
+      const errorText = session.status === 'error' ? `Error: ${session.output}` : '';
+      const finalMsg = { type: 'responseMsg', text: errorText, downloadReady: session.download_ready };
+
+      if (parsed.length === 0 || parsed[parsed.length - 1].type === 'userMsg') {
+        return [...parsed, finalMsg];
+      }
+
+      const result = [...parsed];
+      for (let i = result.length - 1; i >= 0; i--) {
+        if (result[i].type === 'responseMsg') {
+          result[i] = finalMsg;
+          break;
+        }
+      }
+      return result;
+    };
 
     if (session.messages_json) {
       try {
-        setMessages(JSON.parse(session.messages_json));
+        const parsed = JSON.parse(session.messages_json);
+        setMessages(buildMessages(parsed));
       } catch {
-        setMessages([
-          { type: 'userMsg', text: session.prompt },
-          { type: 'responseMsg', text: session.output || 'No output recorded.', downloadReady: session.download_ready },
-        ]);
+        setMessages(buildMessages([{ type: 'userMsg', text: session.prompt }]));
       }
     } else {
-      setMessages([
-        { type: 'userMsg', text: session.prompt },
-        { type: 'responseMsg', text: session.output || 'No output recorded.', downloadReady: session.download_ready },
-      ]);
+      setMessages(buildMessages([{ type: 'userMsg', text: session.prompt }]));
     }
 
     setLoading(session.status === 'pending' || session.status === 'running');
@@ -189,9 +261,20 @@ const App = () => {
     setSessionId(null);
     setProjectSessionId(null);
     setLoading(false);
+    setCancelling(false);
   };
 
   return (
+    <>
+    {showProjects && (
+      <ProjectsView
+        history={history}
+        onDeleteSession={deleteSession}
+        onSessionClick={handleHistoryClick}
+        isDark={isDark}
+        onClose={() => setShowProjects(false)}
+      />
+    )}
     <div className={`flex min-h-screen w-screen ${isDark ? 'bg-[#0e0e0f] text-gray-100' : 'bg-[#f5f3ef] text-gray-900'} transition-colors duration-300`}>
       <HistorySidebar
         open={sidebarOpen}
@@ -209,6 +292,7 @@ const App = () => {
           onToggleSidebar={() => setSidebarOpen(prev => !prev)}
           isDark={isDark}
           onToggleTheme={() => setTheme(t => (t === 'dark' ? 'light' : 'dark'))}
+          onShowProjects={() => setShowProjects(true)}
         />
 
         {/* Offline banner */}
@@ -224,6 +308,26 @@ const App = () => {
         {isResponseScreen ? (
           <>
             <ProgressBar progress={progress} loading={loading} isDark={isDark} />
+
+            {/* Stop button — only visible while running */}
+            {loading && (
+              <div className="flex justify-center pt-2">
+                <button
+                  onClick={handleCancel}
+                  disabled={cancelling}
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-mono border transition-all duration-200 ${
+                    isDark
+                      ? 'border-red-500/30 text-red-400 hover:bg-red-500/10 disabled:opacity-40'
+                      : 'border-red-400/40 text-red-500 hover:bg-red-50 disabled:opacity-40'
+                  }`}
+                >
+                  {/* Simple inline square-stop icon — no extra dependency */}
+                  <span className="w-2.5 h-2.5 rounded-sm bg-current inline-block" />
+                  {cancelling ? 'stopping...' : 'stop generation'}
+                </button>
+              </div>
+            )}
+
             <MessageList messages={messages} onDownload={handleDownload} isDark={isDark} />
           </>
         ) : (
@@ -239,6 +343,7 @@ const App = () => {
         />
       </div>
     </div>
+    </>
   );
 };
 

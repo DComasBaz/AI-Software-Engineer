@@ -39,6 +39,7 @@ def _make_session(**kwargs) -> SimpleNamespace:
         download_ready=0,
         project_path=None,
         messages_json=None,
+        parent_session_id=None,
     )
     defaults.update(kwargs)
     return SimpleNamespace(**defaults)
@@ -95,41 +96,99 @@ class TestPrepareNewSession:
 # ---------------------------------------------------------------------------
 
 class TestPrepareModificationSession:
-    def test_updates_existing_session(self, mock_db, tmp_path):
+    def _setup_db(self, mock_db, root_session, latest_sub=None):
+        """
+        Wire up mock_db so the three sequential queries in
+        prepare_modification_session return the right objects:
+          1. get_session_or_404(db, existing_session_id)  → root_session
+          2. get_session_or_404(db, root_session_id)      → root_session (same)
+          3. latest sub-session query                     → latest_sub
+        """
+        # get_session_or_404 uses .query().filter().first() twice
+        mock_db.query.return_value.filter.return_value.first.side_effect = [
+            root_session,   # source lookup
+            root_session,   # root lookup
+        ]
+        # latest sub-session query uses .query().filter().order_by().first()
+        mock_db.query.return_value.filter.return_value.order_by.return_value.first.return_value = (
+            latest_sub
+        )
+
+    def test_creates_new_sub_session(self, mock_db, tmp_path):
         project_dir = tmp_path / "proj"
         project_dir.mkdir()
-        session = _make_session(id="exist-sess", project_path=str(project_dir))
+        (project_dir / "index.html").write_text("<h1>hello</h1>")
 
-        mock_db.query.return_value.filter.return_value.first.return_value = session
-        mock_db.commit = MagicMock()
-        mock_db.refresh = MagicMock()
+        root = _make_session(id="root-sess", project_path=str(project_dir))
+        new_session = _make_session(id="new-sub", parent_session_id="root-sess")
 
-        with patch("services.project_service.set_project_root"):
+        self._setup_db(mock_db, root)
+
+        with patch("services.project_service.init_project_root") as mock_init, \
+             patch("services.project_service.set_project_root"), \
+             patch("services.project_service.shutil.copytree"), \
+             patch("services.project_service.ChatSession", return_value=new_session):
+            new_project_dir = tmp_path / "new-sub"
+            new_project_dir.mkdir()
+            mock_init.return_value = new_project_dir
+
             result_session, result_path = prepare_modification_session(
-                mock_db, "add dark mode", "exist-sess"
+                mock_db, "add dark mode", "root-sess"
             )
 
-        assert result_session.prompt == "add dark mode"
+        assert result_session.parent_session_id == "root-sess"
         assert result_session.status == "pending"
-        assert result_session.output is None
-        assert result_session.download_ready == 0
 
     def test_raises_if_project_path_missing(self, mock_db):
-        session = _make_session(id="sess-no-path", project_path=None)
-        mock_db.query.return_value.filter.return_value.first.return_value = session
+        root = _make_session(id="sess-no-path", project_path=None)
+        self._setup_db(mock_db, root)
 
         with pytest.raises(ProjectNotFoundError):
             prepare_modification_session(mock_db, "change something", "sess-no-path")
 
     def test_raises_if_project_dir_not_exist(self, mock_db, tmp_path):
-        session = _make_session(
+        root = _make_session(
             id="sess-missing-dir",
             project_path=str(tmp_path / "ghost_folder"),
         )
-        mock_db.query.return_value.filter.return_value.first.return_value = session
+        self._setup_db(mock_db, root)
 
         with pytest.raises(ProjectNotFoundError):
             prepare_modification_session(mock_db, "change something", "sess-missing-dir")
+
+    def test_uses_latest_sub_session_as_base(self, mock_db, tmp_path):
+        """Chained modifications should build on the latest sub-session, not root."""
+        root_dir = tmp_path / "root"
+        root_dir.mkdir()
+        latest_dir = tmp_path / "latest-sub"
+        latest_dir.mkdir()
+        (latest_dir / "index.html").write_text("<h1>v2</h1>")
+
+        root = _make_session(id="root-sess", project_path=str(root_dir))
+        latest_sub = _make_session(
+            id="latest-sub", parent_session_id="root-sess", project_path=str(latest_dir)
+        )
+        new_session = _make_session(id="new-sub-2", parent_session_id="root-sess")
+
+        self._setup_db(mock_db, root, latest_sub=latest_sub)
+
+        copied_from = []
+
+        def capture_copytree(src, dst, **kwargs):
+            copied_from.append(str(src))
+
+        with patch("services.project_service.init_project_root") as mock_init, \
+             patch("services.project_service.set_project_root"), \
+             patch("services.project_service.shutil.copytree", side_effect=capture_copytree), \
+             patch("services.project_service.ChatSession", return_value=new_session):
+            new_project_dir = tmp_path / "new-sub-2"
+            new_project_dir.mkdir()
+            mock_init.return_value = new_project_dir
+
+            prepare_modification_session(mock_db, "add footer", "root-sess")
+
+        # Both copies (snapshot + working folder) should source from latest_dir, not root_dir
+        assert all(str(latest_dir) in p for p in copied_from)
 
 
 # ---------------------------------------------------------------------------

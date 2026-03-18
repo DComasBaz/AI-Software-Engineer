@@ -13,6 +13,7 @@ from database.database import SessionLocal
 from schemas.project import ProjectCreateRequest, ProjectCreateResponse
 from services.project_service import (
     build_project_zip,
+    cancel_session,
     get_session_or_404,
     prepare_modification_session,
     prepare_new_session,
@@ -56,6 +57,28 @@ async def create_project(
         status="pending",
         message="Project generation started. Poll /sessions/{session_id}/progress for status.",
     )
+
+
+@router.post("/{session_id}/cancel", status_code=200)
+def cancel_project(session_id: str, db: Session = Depends(get_db)):
+    """
+    Signals the background agent task to stop after its current step.
+    The task checks this flag at the start of every coder_node iteration,
+    so cancellation takes effect between file writes (not mid-LLM-call).
+    """
+    try:
+        session = get_session_or_404(db, session_id)
+    except AppError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message)
+
+    if session.status not in ("pending", "running"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Session is not running (status: {session.status})",
+        )
+
+    cancel_session(session_id)
+    return {"ok": True, "message": "Cancellation requested"}
 
 
 @router.get("/{session_id}/download")
