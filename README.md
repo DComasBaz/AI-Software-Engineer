@@ -10,7 +10,7 @@ Built with a **LangGraph agent pipeline**, a **FastAPI** backend, and a **React 
 
 > Type a prompt like *"Build a Calculator app using html, css and javascript"* and watch the agent plan, architect, and write every file in real time.
 
-![Screenshot1](assets/Screenshot1.gif)
+![Screenshot1](assets/Demo.gif)
 
 ---
 
