@@ -41,6 +41,13 @@ def init_project_root(session_id: str) -> pathlib.Path:
     logger.info("Project root initialised: %s", project_path)
     return project_path
 
+def init_project_root(session_id: str) -> pathlib.Path:
+    """Creates a unique project folder for the session and sets it as active."""
+    project_path = PROJECTS_BASE / session_id
+    project_path.mkdir(parents=True, exist_ok=True)
+    set_project_root(project_path)
+    logger.info("Project root initialised: %s", project_path)
+    return project_path
 
 def _safe_path(path: str) -> pathlib.Path:
     """Resolves *path* relative to the project root and prevents path traversal."""
@@ -51,6 +58,19 @@ def _safe_path(path: str) -> pathlib.Path:
         raise ValueError(f"Path '{path}' escapes the project root — write blocked.")
     return resolved
 
+def _safe_path(path: str) -> pathlib.Path:
+    """Resolves *path* relative to the project root and prevents path traversal."""
+    root = get_project_root().resolve()
+    resolved = (root / path).resolve()
+    # The resolved path must be equal to or inside the project root
+    if resolved != root and root not in resolved.parents:
+        raise ValueError(f"Path '{path}' escapes the project root — write blocked.")
+    return resolved
+
+
+# ---------------------------------------------------------------------------
+# LangChain tools
+# ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
 # LangChain tools
@@ -85,6 +105,10 @@ def list_files(directory: str = ".") -> str:
     files = [str(f.relative_to(root)) for f in p.glob("**/*") if f.is_file()]
     return "\n".join(sorted(files)) if files else "No files found."
 
+@tool
+def list_file(directory: str = ".") -> str:
+    """Alias for list_files — lists files in a directory."""
+    return list_files.run(directory)
 
 @tool
 def get_current_directory() -> str:

@@ -16,6 +16,8 @@ class ChatSession(Base):
     download_ready = Column(Integer, nullable=False, default=0)
     project_path = Column(String, nullable=True)
     messages_json = Column(Text, nullable=True)  # JSON array of {type, text, downloadReady}
+    # null = root session (shown in history); non-null = modification run (hidden from history)
+    parent_session_id = Column(String, nullable=True)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,
